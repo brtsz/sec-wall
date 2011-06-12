@@ -1,0 +1,41 @@
+{% extends "base/_layout.html" %}
+
+{% hyde
+    section_title: Documentation
+%}
+
+{% block section_title %}Documentation{% endblock %}
+
+{% block content %}
+
+<h1>Documentation</h1>
+
+{% markdown %}
+
+* First steps:
+    * Installing sec-wall on
+            <img src="/media/gfx/logo-ubuntu.png" style="vertical-align:middle" alt="Ubuntu Linux logo" />&nbsp;<a href="/documentation/getting-started/ubuntu.html" title="Installing sec-wall on Ubuntu">Ubuntu</a>
+            <img src="/media/gfx/logo-debian.png" style="vertical-align:middle" alt="Debian GNU/Linux logo" />&nbsp;<a href="/documentation/getting-started/debian.html" title="Installing sec-wall on Debian">Debian</a>
+            <img src="/media/gfx/logo-fedora.png" style="vertical-align:middle" alt="Debian GNU/Linux logo" />&nbsp;<a href="/documentation/getting-started/fedora.html" title="Installing sec-wall on Fedora">Fedora</a>&trade;
+            or <a href="/documentation/getting-started/other-systems.html" title="Installing sec-wall on systems other than Ubuntu, Debian or Fedora"> on some other system</a>
+    * [Getting started tutorial](/documentation/getting-started/tutorial.html)
+
+* [Usage examples](/documentation/usage-examples/index.html)
+* [Architecture &amp; design notes](/documentation/arch/index.html)
+
+* Reference documentation:
+    * [sec-wall, the command-line tool](/documentation/ref-docs/command-line.html)
+    * [Configuration file format](/documentation/ref-docs/config-file.html)
+    * [Configuring security for a particular URL](/documentation/ref-docs/sec-config.html)
+    * [Logging](/documentation/ref-docs/logging.html)
+    * [URL rewriting](/documentation/ref-docs/url-rewrite.html)
+
+* External documentation - blogs, articles, etc.:
+    * [Securing sec-wall services using XPath with namespaces](http://www.gefira.pl/blog/2011/06/01/securing-sec-wall-services-using-xpath-with-namespaces/) (the author's blog, 1 June 2011) ![](/media/gfx/external-link.png)
+    * [sec-wall: Open Source Security Proxy](http://www.linuxsecurity.com/content/view/154884/171/) (linuxsecurity.com, 19 April 2011) ![](/media/gfx/external-link.png)
+    * [Securing sec-wall’s secrets with GnuPG and python-gnupg](http://www.gefira.pl/blog/2011/04/11/securing-sec-walls-secrets-with-gnupg-and-python-gnupg/) (the author's blog, 11 April 2011) ![](/media/gfx/external-link.png)
+    * [Announcing sec-wall 1.0.0, a feature packed high-performance security proxy](http://www.gefira.pl/blog/2011/04/08/announcing-sec-wall-1-0-0-a-feature-packed-high-performance-security-proxy/) (the author's blog, 8 April 2011) ![](/media/gfx/external-link.png)
+
+{% endmarkdown %}
+
+{% endblock %}

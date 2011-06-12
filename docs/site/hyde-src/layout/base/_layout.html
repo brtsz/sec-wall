@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC
+  "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+  <title>sec-wall :: {% block section_title %}{% endblock %}</title>
+  <meta name="description" content="sec-wall is a feature packed high-performance security proxy supporting SSL/TLS, WSSE, HTTP Auth Basic/Digest, extensible authentication schemes based on custom HTTP headers and XPath expressions, powerful URL matching/rewriting and an optional headers enrichment.It's a security wall you can conveniently fence the otherwise defenseless backend servers with" />
+  <meta name="keywords" content="sec-wall,secwall,security,proxy,web services,ssl,tls,basic auth,digest auth,python,libevent,gevent,headers enrichment" />
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link rel="stylesheet" type="text/css" href="/media/css/style.css" />
+  <link rel="stylesheet" type="text/css" href="/media/css/pygments.css" />
+</head>
+
+<body>
+
+  <div class="skip">
+    <a href="#content">Skip to main content</a>
+  </div>
+
+  <div class="skip">
+    <a href="#sidebar_container">Jump to sidebar</a>
+  </div>
+
+  <!-- main start -->
+  <div id="main">
+
+    <!-- header start -->
+    <div id="header">
+      <div id="logo">
+        <div id="logo_text">
+          <h1><a href="/index.html"><strong>sec-wall</strong></a></h1>
+          <h2>A feature packed high-performance security proxy</h2>
+        </div>
+      </div>
+
+      <!-- menubar start -->
+      <div id="menubar">
+        <ul id="menu">
+          <li{% ifequal page.section_title "Home" %} class="selected" {% endifequal %}><a href="/index.html">Home</a></li>
+          <li{% ifequal page.section_title "Downloads" %} class="selected" {% endifequal %}><a href="/documentation/getting-started/index.html">Getting started</a></li>
+          <li{% ifequal page.section_title "Documentation" %} class="selected" {% endifequal %}><a href="/documentation/index.html">Documentation</a></li>
+          <li{% ifequal page.section_title "Support options" %} class="selected" {% endifequal %}><a href="/support/index.html">Support</a></li>
+          <li{% ifequal page.section_title "Get involved" %} class="selected" {% endifequal %}><a href="/get-involved/index.html">Get involved</a></li>
+          <li{% ifequal page.section_title "Blog" %} class="selected" {% endifequal %}><a href="http://www.gefira.pl/blog/" title="(external link) The author's blog">Blog <img src="/media/gfx/external-link.png" alt="" /></a></li>
+          <li{% ifequal page.section_title "Twitter" %} class="selected" {% endifequal %}><a href="https://twitter.com/fourthrealm" title="(external link) Follow the author on Twitter">Twitter <img src="/media/gfx/external-link.png" alt="" /></a></li>
+        </ul>
+      </div>
+      <!-- menubar end -->
+
+    </div>
+    <!-- header end -->
+
+    <!-- site_content start -->
+    <div id="site_content">
+
+      <!-- content start -->
+      <div id="content">
+      {% block content %}
+      {% endblock %}
+
+      {% ifequal page.has_exercises "True" %}
+      <h2 id="exercises">Exercises</h2>
+      <div class="exercises">
+          <div class="description">
+              Most of the sec-wall documentation's chapters end with an "Exercises" section
+              which contains a set of assignments for you to tackle. They're meant to make yourself
+              comfortable with the newly acquired material. If you feel like stumbling
+              or would like to suggest any improvements, please
+              <a href="/support/index.html" title="Support options">let the project know</a>.
+              Thanks!
+          </div>
+      </div>
+
+      <div class="exercises">
+          <div class="description">
+          Here are the exercises prepared for this chapter:
+          </div>
+          <ol>
+            {% block exercises %}
+            {% endblock %}
+          </ol>
+      </div>
+      {% endifequal %}
+
+      </div>
+      <!-- content end -->
+
+      <!-- sidebar_container start -->
+      <div id="sidebar_container">
+
+      {% ifequal page.has_this_page "True" %}
+        <div class="sidebar">
+          <div class="sidebar_top"></div>
+          <div class="sidebar_item">
+            <h1>On this page</h1>
+            <ul>
+              {% block this_page %}
+              {% endblock %}
+            </ul>
+          </div>
+          <div class="sidebar_base"></div>
+        </div>
+      {% endifequal %}
+
+        <!-- sidebar start -->
+        <div class="sidebar">
+          <div class="sidebar_top"></div>
+          <div class="sidebar_item">
+            <h1>Getting started</h1>
+            <p><img src="/media/gfx/logo-ubuntu.png" style="vertical-align:middle" alt="Ubuntu Linux logo" />&nbsp;<a href="/documentation/getting-started/ubuntu.html" title="Getting started on Ubuntu">Ubuntu</a></p>
+            <p><img src="/media/gfx/logo-debian.png" style="vertical-align:middle" alt="Debian GNU/Linux logo" />&nbsp;<a href="/documentation/getting-started/debian.html" title="Getting started on Debian">Debian</a></p>
+            <p><img src="/media/gfx/logo-fedora.png" style="vertical-align:middle" alt="Fedora Linux logo" />&nbsp;<a href="/documentation/getting-started/fedora.html" title="Getting started on Fedora">Fedora</a>&trade;</p>
+            <p><img src="/media/gfx/logo-any.png" style="vertical-align:middle" alt="A bubble icon used as a symbol of any operating system"/>&nbsp;<a href="/documentation/getting-started/other-systems.html" title="Getting started on systems other than Ubuntu, Debian or Fedora">Other systems</a></p>
+          </div>
+          <div class="sidebar_base"></div>
+        </div>
+        <!-- sidebar end -->
+
+        <!-- sidebar start -->
+        <div class="sidebar">
+          <div class="sidebar_top"></div>
+          <div class="sidebar_item">
+            <p>
+              Latest version: <a href="/documentation/getting-started/index.html" title="Install the latest version 1.0.0">1.0.0</a>
+            </p>
+          </div>
+          <div class="sidebar_base"></div>
+        </div>
+        <!-- sidebar end -->
+
+      </div>
+      <!-- sidebar_container end -->
+
+    </div>
+    <!-- site_content end -->
+
+    <!-- footer start -->
+    <div id="footer">
+      <p>
+        <a href="/index.html">Home</a> |
+        <a href="/documentation/getting-started/index.html">Downloads</a> |
+        <a href="/documentation/index.html">Documentation</a> |
+        <a href="/support/index.html">Support</a> |
+        <a href="/get-involved/index.html">Get involved</a> |
+        <a href="http://www.gefira.pl/blog/" title="(external link) The author's blog">Blog</a> <img src="/media/gfx/external-link.png" alt="" /> |
+        <a href="https://twitter.com/fourthrealm" title="(external link) Follow the author on Twitter">Twitter</a> <img src="/media/gfx/external-link.png" alt="" />
+      </p>
+      <a href="http://www.html5webtemplates.co.uk">design from HTML5webtemplates.co.uk</a>
+    </div>
+    <!-- footer end -->
+
+    <p>&nbsp;</p>
+  </div>
+  <!-- main end -->
+
+</body>
+</html>

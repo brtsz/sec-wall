@@ -1,0 +1,81 @@
+{% extends "base/_layout.html" %}
+
+{% hyde
+    section_title: Documentation
+    has_exercises: "True"
+    has_this_page: "True"
+%}
+
+{% block section_title %}URL rewriting{% endblock %}
+
+{% block exercises %}
+    <li>Configure URL rewriting so that the /foo/123/bar/ZXC/baz/9900/ URL
+        gets rewritten into /qq/ZXC?foo=123?baz=9900
+    </li>
+    <li>Look up <b>Flann O'Brien</b> on
+        <a href="http://www.wikipedia.org">Wikipedia</a>
+        <img src="/media/gfx/external-link.png" alt="" />
+        and read all of the novels mentioned there. (OK, that was supposed
+        to be taken semi-jokingly)
+    </li>
+{% endblock %}
+
+{% block this_page %}
+    <li><a href="#how-it-works">How it works</a></li>
+    <li><a href="#exercises">Exercises</a></li>
+{% endblock %}
+
+{% block content %}
+
+{% markdown %}
+
+<h1>URL rewriting</h1>
+
+<h2 id="how-it-works">How it works</h2>
+
+sec-wall has support for changing the URLs on fly, that is, the URL a client
+application is accessing doesn't necessarily have to map 1:1 to what a backend
+server exposes, there's always an option of sec-wall's adjusting it to your needs.
+
+You doubtless remember that
+<a href="/documentation/ref-docs/sec-config.html#url-patterns">parts of the URLs to be matched need to be <i>named</i></a>
+and the names can be used for constructing new URLs, like in this example:
+
+<div style="text-align:center">
+    <img src="/media/gfx/url-rewrite.png" alt="" />
+</div>
+
+That is, it's possible to state that a pattern of the URL the client application
+invokes - such as <b>/before/\<customer_id:int\>/profile/\<customer_name:unicode\>/</b>
+gets mapped into a backend server's <b>/after/{customer_id}/cust-profile/{customer_name}/</b>
+pattern. Hence in runtime, a client application's invoking the <b>/before/2816917/profile/Flann O'Brien/</b>
+URL will result in sec-wall's invoking the backend's URL of <b>/after/2816917/cust-profile/Flann O'Brien/</b> -
+in other words, the names matched may be put between curly bracket to help form new URLs.
+
+The complete configuration, one that should be added to
+<a href="/documentation/ref-docs/config-file.html">the config.py file</a>,
+might look like the one below, the key is to use the <b>rewrite</b> option of
+a given URL's configuration dictionary.
+
+{% syntax python %}
+def url_rewrite_sample():
+    return {
+        'custom-http': True,
+        'custom-http-Accept-Language':'en-us,en;q=0.5',
+        'host': 'http://example.com/',
+        'rewrite': '/after/{customer_id}/cust-profile/{customer_name}/'
+    }
+
+urls = [
+    ('/before/<customer_id:int>/profile/<customer_name:unicode>/', url_rewrite_sample()),
+]
+{% endsyntax %}
+
+<h2 id="examples">Examples</h2>
+
+There's [a whole chapter devoted to nothing but showing various examples of sec-wall's configuration files](/documentation/usage-examples/index.html),
+head over there for more information.
+
+{% endmarkdown %}
+
+{% endblock %}

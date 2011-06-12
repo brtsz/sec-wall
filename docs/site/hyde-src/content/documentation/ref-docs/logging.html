@@ -1,0 +1,365 @@
+{% extends "base/_layout.html" %}
+
+{% hyde
+    section_title: Documentation
+    has_exercises: "True"
+    has_this_page: "True"
+%}
+
+{% block section_title %}Logging{% endblock %}
+
+{% block exercises %}
+    <li>Start and stop a sec-wall instance several times. Look up its PID in
+        <a href="#intro">the zdaemon's log file</a>. Use
+        the <b>ps</b> command to confirm the PID's being reported correctly.
+    </li>
+    <li>
+        Try coming up with an incorrect configuration, one that means sending
+        the client a 500 HTTP status. What got logged into
+        <a href="#intro">the log of unhandled exceptions</a>?
+    </li>
+    <li>
+        Have sec-wall add
+        <a href="#intro"><b>X-sec-wall-invocation-id</b> and
+        <b>X-sec-wall-invocation-id-signed</b> HTTP headers</a>.
+        Confirm that both the backend server and the client application receive
+        the same headers. Confirm the headers are genuinly unique.
+    </li>
+    <li>
+        <a href="#log-entries-configure">Reconfigure the proxy</a> to use a remote syslog daemon through UDP.
+    </li>
+    <li>
+        What gets logged to syslog in case an HTTP 500 error has been encountered?
+    </li>
+    <li>
+        Change the log level to <a href="#log-entries-configure">DEBUG</a>,
+        confirm the details are being logged now.
+    </li>
+    <li>
+        Use <a href="#log-entries-configure">the log_file_config variable</a>
+        for reconfiguring sec-wall to use Python's built-in
+        <a href="http://docs.python.org/library/logging.html#rotatingfilehandler">RotatingFileHandler</a>
+        <img src="/media/gfx/external-link.png" alt="" />.
+    </li>
+{% endblock %}
+
+{% block this_page %}
+    <li><a href="#intro">Introduction</a></li>
+    <li><a href="#http-headers">HTTP headers</a>
+        <ol>
+            <li><a href="#http-headers-default">Default configuration</a></li>
+            <li><a href="#http-headers-configure">Configuring HTTP headers</a></li>
+            <li><a href="#http-headers-format">The headers format</a></li>
+        </ol>
+    </li>
+    <li><a href="#log-entries">Log entries</a>
+        <ol>
+            <li><a href="#log-entries-default">Default configuration</a></li>
+            <li><a href="#log-entries-configure">Configuring log entries</a></li>
+            <li><a href="#log-entries-format">The log entry format</a></li>
+        </ol>
+    </li>
+    <li><a href="#exercises">Exercises</a></li>
+{% endblock %}
+
+{% block content %}
+
+{% markdown %}
+
+<h1>Logging</h1>
+
+<h2 id="intro">Introduction</h2>
+
+There are several layers of logging employed by sec-wall. Proper understanding
+of all of them is essential for mastering sec-wall yet not all of them will come
+in handy in day-to-day work - some of them are rarely needed, for instance, only
+when you're to deal with misbehaving proxy instances, others - like the log of
+requests passing through a proxy - will be used more frequently.
+
+What gets logged where and why stems directly from
+[how sec-wall has been designed](/documentation/arch/index.html)
+and the sketch diagram below captures the flow of information that controls the logging process.
+Note that all paths are relative to
+[the config.py file](/documentation/ref-docs/config-file.html).
+
+<div style="text-align:center">
+  <img src="/media/gfx/logging.png" alt=""/>
+</div>
+
+You'll remember that
+[sec-wall runs under a control of zdaemon](/documentation/arch/index.html), that's
+why when the proxy is starting or stopping, there's a log entry being written
+to the ./zdaemon.log file, basically the information which process is that of sec-wall
+and that it has just started or stopped.
+
+An unhandled error while processing an incoming client requests is always wrapped
+in an HTTP 500 error and any information that might aid with resolving
+the issue is being written to the ./logs/proxy.log file.
+
+If config.py says that
+[add_invocation_id](/documentation/ref-docs/config-file.html#add_invocation_id)
+and
+[sign_invocation_id](/documentation/ref-docs/config-file.html#sign_invocation_id)
+are in effect, the necessary HTTP headers are created. Their format is documented
+in [a separate section](#http-headers).
+
+The regular log entries - showing what applications were accessing sec-wall, when it was,
+whether they succeeded or not and [similar things](#log-entries) - are being written to
+[syslog by default](#log-entries-configure)
+and their format
+is documented
+in
+[a separate section](#log-entries).
+Whether they're written at all though depends on
+[the log level configured](/documentation/ref-docs/config-file.html#log_level).
+They're emitted on either INFO or ERROR level so if you change the log level to,
+say, CRITICAL, you'll never have any regular log messages written to the logs.
+
+<h2 id="http-headers">HTTP headers</h2>
+<h4 id="http-headers-default">Default configuration</h4>
+The default configuration is governed by the config.py-wide variables:
+<a href="/documentation/ref-docs/config-file.html#add_invocation_id">add_invocation_id</a>
+and
+<a href="/documentation/ref-docs/config-file.html#sign_invocation_id">sign_invocation_id</a>.
+<br/>
+<br/>
+
+<h4 id="http-headers-configure">Configuring HTTP headers</h4>
+
+Visit the sections about
+<a href="/documentation/ref-docs/config-file.html#add_invocation_id">add_invocation_id</a>
+and
+<a href="/documentation/ref-docs/config-file.html#sign_invocation_id">sign_invocation_id</a>
+variables for information on how to influence when the invocation ID-related headers
+are being added.
+<br/>
+<br/>
+
+<h4 id="http-headers-format">The headers format</h4>
+
+An invocation ID is a string that uniquely identifies the given exchange of data
+between a client application and a sec-wall instance. As long as
+<a href="/documentation/ref-docs/config-file.html#INSTANCE_UNIQUE">the INSTANCE_UNIQUE variable</a>
+actually stays unique, the ID will be unique.
+<br/><br/>
+
+The exact formula for creating the <b>X-sec-wall-invocation-id</b> HTTP header is:
+<br/><br/>
+
+separator = '/'
+<br/>
+msg_number = msg_counter.next()
+<br/>
+invocation_id = <a href="/documentation/ref-docs/config-file.html#instance_name">instance_name</a>
+    + separator + <a href="/documentation/ref-docs/config-file.html#INSTANCE_UNIQUE">INSTANCE_UNIQUE</a> + separator + msg_number
+
+<br/><br/>
+
+where <i>msg_counter</i> is an
+<a href="http://docs.python.org/library/itertools.html#itertools.count">itertools.count</a>
+<img src="/media/gfx/external-link.png" alt="" /> instance, starting with 1,
+recycled on each sec-wall's restart.
+
+<br/><br/>
+
+<h2 id="log-entries">Log entries</h2>
+
+Each client's accessing a sec-wall instance ends in a log entry being emitted
+to the logs. The log entries constitute both an access and an error log in the
+sense that they're being written regardless of the HTTP response code, be it
+2xx, 4xx, 5xx or any other.
+
+<h4 id="log-entries-default">Default configuration</h4>
+
+By default, if you haven't changed anything yet, sec-wall will be using local
+syslog. The messages will be written to
+<a href="/documentation/ref-docs/config-file.html#syslog_address">/dev/syslog</a>
+using the
+<a href="/documentation/ref-docs/config-file.html#syslog_facility">LOG_USER</a>
+facility. Each message will be on either INFO or ERROR level which means that
+all of the messages will land in syslog because the default
+log level is
+<a href="/documentation/ref-docs/config-file.html#log_level">INFO</a>.
+
+Depending on your syslog's configuration, the entries will by default probably
+end up being written somewhere to /var/log, on Ubuntu it will be
+the /var/log/messages file.
+
+<h4 id="log-entries-configure">Configuring log entries</h4>
+
+Changing the configuration may mean modifying the information about where syslog
+is to be found, changing the log level or making sec-wall stop using syslog at all
+in favour of any of
+[the logging facilities Python supports](http://docs.python.org/library/logging.html) ![](/media/gfx/external-link.png)
+.
+
+Use
+[syslog_address](/documentation/ref-docs/config-file.html#syslog_address)
+and
+[syslog_facility](/documentation/ref-docs/config-file.html#syslog_facility)
+variables to change the sec-wall's syslog-related configuration, for instance, to have a
+sec-wall instance log to a remote syslog daemon.
+
+Changing
+[the log level](/documentation/ref-docs/config-file.html#log_level)
+a sec-wall proxy is running on influences a couple of
+things. Firstly, it dictates how many entries will be written to logs. The other
+thing is, the amount of things written in a single entry may be configured.
+
+A running proxy emits entries on either INFO or ERROR level. INFO is reserved
+for HTTP conversations that end in a successful authentication, that is, the client
+application had supplied the expected credentials and was let in. Any other situations
+will result in an ERROR entry being emitted to the logs.
+
+You can change the log level to ERROR if you'd like to be shown only erratic situations.
+Changing the log level in the other direction, to the DEBUG level, means a single
+log entry will contain more [details](#log-entries-format). Note that the details
+will also be added if the client hasn't been allowed in, when the incoming request
+has been rejected.
+
+One can always use
+<a href="/documentation/ref-docs/config-file.html#log_file_config">log_file_config</a>
+for completely overriding where entries are written to. You can use for configuring
+it to anything Python itself allows, including auto-rotated files, SMTP, queues
+and many more. Note that <a href="/documentation/ref-docs/config-file.html#log_file_config">log_file_config</a>
+has priority over the default syslog configuration so whatever
+<a href="/documentation/ref-docs/config-file.html#syslog_address">syslog_address</a> and
+<a href="/documentation/ref-docs/config-file.html#syslog_facility">syslog_facility</a>
+have been set to will be ignored.
+
+<h4 id="log-entries-format">The log entry format</h4>
+
+A single log entry consists of either 10 or 16 semicolon-separated fields -
+<a href="#log-entries-configure">the exact number depends on whether the details shouldn't or should be logged</a>
+in addition to the basic data. Note that a field may always be empty if there was no way
+to establish its proper vaule.
+
+Here are some clickable examples of both short and long log entries. They're broken
+out into several lines but each entry is actually emitted as a single line.
+
+<div style="text-align:left">
+<a href="#index-0">default/766a1eb215c643278626035f996d54cb/1</a>;<a href="#index-1">200</a>;<a href="#index-2">2011-04-03 18:21:43.036256</a>;<a href="#index-3">127.0.0.1</a>;<a href="#index-4">GET /foo/bar</a>;<a href="#index-5">0.002478</a>;<a href="#index-6">1.216932</a>;<a href="#index-7">1.219410</a>;<a href="#index-8">0</a>;<a href="#index-9">0</a>
+</div>
+<br/>
+
+<div style="text-align:left">
+<a href="#index-0">default/766a1eb215c643278626035f996d54cb/2</a>;<a href="#index-1">401</a>;<a href="#index-2">2011-04-03 18:23:47.195186</a>;<a href="#index-3">127.0.0.1</a>;<a href="#index-4">POST /foo/bar</a>;<a href="#index-5">0.000413</a>;<a href="#index-6">0.000000</a>;<a href="#index-7">0.000413</a>;<a href="#index-8">1</a>;<a href="#index-9">0006.0002</a>;<a href="#index-10">"Jakarta Commons-HttpClient/3.1"</a>;<a href="#index-11">gevent/0.13 Python/2.6</a>;<a href="#index-12">localhost6.localdomain6</a>;<a href="#index-13">15100</a>;<a href="#index-14">custom-http</a>;<a href="#index-15">&lt;soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"&gt;&lt;soapenv:Body&gt;&lt;x&gt;aaa&lt;/x&gt;&lt;/soapenv:Body&gt;&lt;/soapenv:Envelope&gt;</a>
+</div>
+<br/>
+
+The table below lists all the fields along with their description. Note that
+fields are 0-indexed. Again, fields 0-9 are the basic data and 10-15 are
+supplementary details.
+
+<table style="width:100%">
+    <tr>
+        <th>Index</th>
+        <th>Description</th>
+        <th>Example value</th>
+    </tr>
+    <tr id="index-0">
+        <td>0</td>
+        <td>Invocation ID, the same that may be injected into an
+            <a href="#http-headers-format">X-sec-wall-invocation-id</a> HTTP header</td>
+        <td>Production #19/e32cad2952e042529daabf021f92809d/191761</td>
+    </tr>
+    <tr id="index-1">
+        <td>1</td>
+        <td>HTTP status code returned to the client application</td>
+        <td>200</td>
+    </tr>
+    <tr id="index-2">
+        <td>2</td>
+        <td>Invocation's timestamp as returned by the Python's
+            <a href="http://docs.python.org/library/datetime.html#datetime.datetime.now">datetime.datetime.now</a>
+            function <img src="/media/gfx/external-link.png" alt="" />
+            </td>
+        <td>2011-04-03 19:34:27.864891</td>
+    </tr>
+    <tr id="index-3">
+        <td>3</td>
+        <td>IP address of the client application</td>
+        <td>10.158.1.81</td>
+    </tr>
+    <tr id="index-4">
+        <td>4</td>
+        <td>HTTP method and path accessed by the client</td>
+        <td>POST /services/loans</td>
+    </tr>
+    <tr id="index-5">
+        <td>5</td>
+        <td>The overhead incurred by sec-wall itself - the time in seconds spent in
+            sec-wall's code not including any external factors like invoking
+            the backend server</td>
+        <td>0.002478</td>
+    </tr>
+    <tr id="index-6">
+        <td>6</td>
+        <td>Time in seconds spent on waiting for the backend server to reply. Will
+            be equal to 0 seconds if the client request hadn't sucessfully passed through
+            the authentication phase and no backend server was invoked at all.</td>
+        <td>1.216932</td>
+    </tr>
+    <tr id="index-7">
+        <td>7</td>
+        <td>The sum of what's under the index <a href="#index-5">5</a> and <a href="#index-6">6</a>,
+            that is, the total time in seconds the client application had to wait for a sec-wall instance to reply</td>
+        <td>1.219410</td>
+    </tr>
+    <tr id="index-8">
+        <td>8</td>
+        <td>Boolean value indicating whether the client application was
+            successfully authenticated. '0' means 'yes', '1' - 'no'.</td>
+        <td>0</td>
+    </tr>
+    <tr id="index-9">
+        <td>9</td>
+        <td>Error code assigned to the given invocation. '0' means 'no errors at all'
+            and any other value indicates an error.</td>
+        <td>0005.0003</td>
+    </tr>
+    <tr id="index-10">
+        <td>10</td>
+        <td>The HTTP User-Agent header as sent by the client application</td>
+        <td>"Erlang XML-RPC Client 1.13"</td>
+    </tr>
+    <tr id="index-11">
+        <td>11</td>
+        <td>HTTP(S) server the given sec-wall instance was running on top of</td>
+        <td>gevent/0.13 Python/2.7</td>
+    </tr>
+    <tr id="index-12">
+        <td>12</td>
+        <td>Address the given instance was bound to</td>
+        <td>mysubdomain.example.com</td>
+    </tr>
+    <tr id="index-13">
+        <td>13</td>
+        <td>Port the proxy was listening on</td>
+        <td>15100</td>
+    </tr>
+    <tr id="index-14">
+        <td>14</td>
+        <td>The type of security configuration the client application was expected
+            to use, it's always one of the values from the
+            <a href="/documentation/ref-docs/config-file.html#validation_precedence">validation_precedence</a>
+            list.
+        </td>
+        <td>ssl-cert</td>
+    </tr>
+    <tr id="index-15">
+        <td>15</td>
+        <td>HTTP POST data sent in by the client application, assuming
+            there was any POST data sent through at all</td>
+        <td>&lt;soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"&gt;&lt;soapenv:Body&gt;&lt;x&gt;aaa&lt;/x&gt;&lt;/soapenv:Body&gt;&lt;/soapenv:Envelope&gt;</td>
+    </tr>
+</table>
+
+<h2 id="examples">Examples</h2>
+
+There's [a whole chapter devoted to nothing but showing various examples of sec-wall's configuration files](/documentation/usage-examples/index.html),
+head over there for more information.
+
+{% endmarkdown %}
+
+{% endblock %}

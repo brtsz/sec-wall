@@ -1,0 +1,751 @@
+{% extends "base/_layout.html" %}
+
+{% hyde
+    section_title: Documentation
+    has_exercises: "True"
+    has_this_page: "True"
+%}
+
+{% block section_title %}Configuration file format{% endblock %}
+
+{% block exercises %}
+    <li>Create a new sec-wall instance and modify
+        the <a href="#INSTANCE_SECRET">INSTANCE_SECRET</a> variable
+    </li>
+    <li>Try running sec-wall with at least one of
+        the <a href="#required">required variables</a> missing.
+        What happens when the instance is starting? What happens in runtime,
+        when you access sec-wall from a browser?
+    </li>
+    <li>
+        Create a new proxy, let the <a href="#urls">urls</a> variable be an empty
+        dictionary and set <a href="#add_default_if_not_found">add_default_if_not_found</a>
+        to False. What happens if you access the proxy?
+    </li>
+    <li>
+        Make use of <a href="#ca_certs">ca_certs</a>, <a href="#certfile">certfile</a>,
+        <a href="#crypto_dir">crypto_dir</a>, <a href="#keyfile">keyfile</a>
+        and <a href="#server_type">server_type</a> variables for
+        configuring an instance to run using HTTPS instead of HTTP.
+    </li>
+    <li>
+        Observe what headers the backend you're using returns and add them
+        on the <a href="#from_backend_ignore">from_backend_ignore</a> list. Confirm
+        the result from your browser using <a href="http://getfirebug.com/">Firebug</a>
+        or a similar tool.
+    </li>
+    <li>
+        Use the <a href="#host">host</a> and <a href="#port">port</a> variables
+        for running an instance on a different interface and port than it defaults to.
+    </li>
+    <li>
+        Generate two new instances, set the <a href="#instance_name">instance_name</a>
+        of both to a different value and confirm the name is being logged by syslog
+        when accessing the proxies.
+    </li>
+    <li>
+        Use <a href="#log_file_config">log_file_config</a> and change the way
+        logging messages are being emitted. For instance - but let that not bind
+        you in any way - try configuring it to use
+        <a href="http://plumberjack.blogspot.com/2010/09/queuehandler-and-zeromq-support.html" title="Using ZeroMQ for logging">ZeroMQ</a>
+        <img src="/media/gfx/external-link.png" alt="" /> instead of syslog.
+    </li>
+    <li>
+        Run syslog on a separate host and use the <a href="#syslog_address">variable</a>
+        for configuring a sec-wall instance to use UDP for logging.
+    </li>
+    <li>
+        Make use of the <a href="#log_level">log_level</a> variable and change the logging
+        level to ERROR. Then to DEBUG.
+    </li>
+
+{% endblock %}
+
+{% block this_page %}
+  <li><a href="#intro">Introduction</a></li>
+  <li><a href="#minimal">A minimal config file</a></li>
+  <li><a href="#variables">Variables</a>
+    <ol>
+        <li><a href="#required">Required variables</a>
+            <ol>
+                <li><a href="#INSTANCE_SECRET">INSTANCE_SECRET</a></li>
+                <li><a href="#INSTANCE_UNIQUE">INSTANCE_UNIQUE</a></li>
+                <li><a href="#urls">urls</a></li>
+            </ol>
+        </li>
+        <li><a href="#optional">Optional variables</a>
+            <ol>
+                <li><a href="#add_default_if_not_found">add_default_if_not_found</a></li>
+                <li><a href="#add_invocation_id">add_invocation_id</a></li>
+                <li><a href="#ca_certs">ca_certs</a></li>
+                <li><a href="#certfile">certfile</a></li>
+                <li><a href="#client_cert_401_www_auth">client_cert_401_www_auth</a></li>
+                <li><a href="#crypto_dir">crypto_dir</a></li>
+                <li><a href="#default_url_config">default_url_config</a></li>
+                <li><a href="#forbidden">forbidden</a></li>
+                <li><a href="#from_backend_ignore">from_backend_ignore</a></li>
+                <li><a href="#host">host</a></li>
+                <li><a href="#instance_name">instance_name</a></li>
+                <li><a href="#internal_server_error">internal_server_error</a></li>
+                <li><a href="#keyfile">keyfile</a></li>
+                <li><a href="#log_file_config">log_file_config</a></li>
+                <li><a href="#log_level">log_level</a></li>
+                <li><a href="#no_url_match">no_url_match</a></li>
+                <li><a href="#not_authorized">not_authorized</a></li>
+                <li><a href="#port">port</a></li>
+                <li><a href="#quote_path_info">quote_path_info</a></li>
+                <li><a href="#quote_query_string">quote_query_string</a></li>
+                <li><a href="#server_tag">server_tag</a></li>
+                <li><a href="#server_type">server_type</a></li>
+                <li><a href="#sign_invocation_id">sign_invocation_id</a></li>
+                <li><a href="#syslog_address">syslog_address</a></li>
+                <li><a href="#syslog_facility">syslog_facility</a></li>
+                <li><a href="#validation_precedence">validation_precedence</a></li>
+            </ol>
+        </li>
+    </ol>
+  </li>
+  <li><a href="#examples">Examples</a></li>
+  <li><a href="#exercises">Exercises</a></li>
+{% endblock %}
+
+{% block content %}
+
+{% markdown %}
+
+<h1>Configuration file format</h1>
+
+<h2 id="intro">Introduction</h2>
+
+Once the sec-wall instance's directory has been
+[initialized](/documentation/ref-docs/command-line.html#init), it will
+contain a <i>config.py</i> file which is the central place for configuring any settings.
+The file is a regular Python source code file which means it must adhere to the
+Python's syntax.
+
+As far as sec-wall is concerned, the file should simply contain
+at least several variables whose values must be within the expected range and type and it's
+absolutely none of sec-wall's business to understand where these values come from -
+in other words, the whole configuration may, for instance,  be actually stored in
+[LDAP](http://en.wikipedia.org/wiki/LDAP) ![](/media/gfx/external-link.png),
+fetched through
+[RabbitMQ](http://www.rabbitmq.com) ![](/media/gfx/external-link.png)
+and pumped into said variables using
+[Telepathy](http://telepathy.freedesktop.org/wiki/) ![](/media/gfx/external-link.png).
+The chapters below all picture it like if the variables were manually set to static strings
+but it's worth emphasizing that there's no such a requirement, being written in Python,
+the config file may be turned highly dynamic.
+
+<h2 id="minimal">A minimal config file</h2>
+
+Here's how a minimal config file may look like. It isn't particularly stunning and
+useful because what it does basically is preventing any client application from
+passing through but it serves as an example of what is to be expected from the
+configuration format. And please, **do not** use it as-is for creating your
+own config file from scratch - that's because the INSTANCE_SECRET variable should
+be kept out of sight, it's the value many crypto operations depend on so it should
+be treated with the utmost care, the one below has become useless the moment it's been
+published online. Instead, you should simply
+[initialize](/documentation/ref-docs/command-line.html#init)
+sec-wall in an empty directory.
+
+{% syntax python %}
+# -*- coding: utf-8 -*-
+
+# stdlib
+import uuid
+
+# Don't share it with anyone.
+INSTANCE_SECRET = 'dda695cff20d43f7a8d9218b2006749f'
+
+# May be shared with the outside world.
+INSTANCE_UNIQUE = uuid.uuid4().hex
+
+# ##############################################################################
+
+def default():
+    return {
+        'ssl': True,
+        'ssl-cert': True,
+        'ssl-cert-commonName':INSTANCE_SECRET,
+        'host': 'http://' + INSTANCE_SECRET
+    }
+
+urls = [
+    ('/*', default()),
+]
+{% endsyntax %}
+
+<h2 id="variables">Variables</h2>
+
+Configuration variables can be divided into two groups, several required ones
+and the prevailing majority of optional variables whose values will be set
+automatically unless overridden in the configuration file.
+
+<h4 id="required">Required variables</h4>
+
+The variables listed below are absolutely necessary for the proper functioning
+of a sec-wall's instance and new versions of sec-wall are free to assume they
+exist in the config file. They're created during
+[the initialization process](/documentation/ref-docs/command-line.html#init)
+and you just need to make sure they don't get inadvertently deleted.
+
+<ul>
+    <li><a href="#INSTANCE_SECRET">INSTANCE_SECRET</a></li>
+    <li><a href="#INSTANCE_UNIQUE">INSTANCE_UNIQUE</a></li>
+    <li><a href="#urls">urls</a></li>
+</ul>
+
+<h5 id="INSTANCE_SECRET">INSTANCE_SECRET</h5>
+
+Default:
+<span class="default">
+A UUID4 identifier
+</span>
+
+A string used as a salt when
+<a href="#sign_invocation_id">cryptographically signing the requests</a> and in the
+automatically generated default configuration - for denying the access
+to all client applications. The default value is a UUID4 which should
+be enough for most needs. There's really no reason for changing it but
+whatever you set the value to, be sure it's actually strong enough for your
+particular requirements. Do also note that the value should be sufficiently
+protected from prying eyes, it's meant to be a secret.
+
+See also: [add_invocation_id](#add_invocation_id) and [sign_invocation_id](#sign_invocation_id)
+
+Samples:
+
+{% syntax python %}
+INSTANCE_SECRET = '740aa279a1f74cd9903f44317e03ca41'
+{% endsyntax %}
+
+{% syntax python %}
+INSTANCE_SECRET = ':1@{8Q+W#Ilzk?:C23A{JD23A{UXQK@#:X{Z)A@#ALCSM#)'
+{% endsyntax %}
+
+<h5 id="INSTANCE_UNIQUE">INSTANCE_UNIQUE</h5>
+
+Default:
+<span class="default">
+A UUID4 identifier regenerated on each sec-wall's restart
+</span>
+
+An identifier assigned to the instance for the purpose of uniquely identifying the requests
+transmitted through the proxy. Contrast with <a href="#instance_name">instance_name</a>
+variable below, the conceptual difference between the two being that <i>INSTANCE_UNIQUE</i> is meant
+to guarantee the uniqueness of the message identifiers while <a href="#instance_name">instance_name</a>
+is rather a human-friendly label assigned to the instance.
+
+The combination of <i>instance_name and</i> <i>INSTANCE_UNIQUE</i> should be unique across
+all sec-wall instances in your environment as it would otherwise
+potentially lead to duplicate message identifiers being written to logs. To ensure it,
+the default value of <i>INSTANCE_UNIQUE</i> is a UUID4 identifier.
+
+You probably don't want to change the default value but if you do, you just need
+to make sure the combination of <i>INSTANCE_UNIQUE</i> and <i>instance_name and</i> stays unique
+across all requests ever processed by your environment, hence the default value
+should make sense for everyone.
+
+See also: [instance_name](#instance_name).
+
+<h5 id="urls">urls</h5>
+
+Default:
+<span class="default">
+A catch-all pattern which points to a configuration that requires the client
+         SSL certificate's commonName field be equal to INSTANCE_SECRET
+</span>
+
+A list of 2-element lists or tuples each of which describes the URL pattern to
+be secured and the particular security configuration guarding the given URL pattern.
+Visit the
+[chapter dedicated to configuring security for a particular pattern](/documentation/ref-docs/sec-config.html)
+for more details.
+
+Sample:
+
+{% syntax python %}
+def default():
+    return {
+        'ssl': False,
+        'custom-http': True,
+        'custom-http-X-ABC':'foo',
+        'add-auth-info': True,
+        'sign-auth-info': True,
+        'host': 'http://localhost:17090/'
+    }
+
+urls = [
+    ('/*', default()),
+]
+{% endsyntax %}
+
+<h4 id="optional">Optional variables</h4>
+
+The variables documented below are all optional and allow for a detailed customization
+of sec-wall instances although sane defaults will be used when they're not set explicitly.
+Note that what's listed below are only these options that are specific to a sec-wall
+instance as a whole,
+[all the choices for configuring security of particular URLs are listed in a separate chapter](/documentation/ref-docs/sec-config.html).
+
+<ul>
+    <li><a href="#add_default_if_not_found">add_default_if_not_found</a></li>
+    <li><a href="#add_invocation_id">add_invocation_id</a></li>
+    <li><a href="#ca_certs">ca_certs</a></li>
+    <li><a href="#certfile">certfile</a></li>
+    <li><a href="#client_cert_401_www_auth">client_cert_401_www_auth</a></li>
+    <li><a href="#crypto_dir">crypto_dir</a></li>
+    <li><a href="#default_url_config">default_url_config</a></li>
+    <li><a href="#forbidden">forbidden</a></li>
+    <li><a href="#from_backend_ignore">from_backend_ignore</a></li>
+    <li><a href="#host">host</a></li>
+    <li><a href="#instance_name">instance_name</a></li>
+    <li><a href="#internal_server_error">internal_server_error</a></li>
+    <li><a href="#keyfile">keyfile</a></li>
+    <li><a href="#log">log</a></li>
+    <li><a href="#log_file_config">log_file_config</a></li>
+    <li><a href="#log_level">log_level</a></li>
+    <li><a href="#no_url_match">no_url_match</a></li>
+    <li><a href="#not_authorized">not_authorized</a></li>
+    <li><a href="#port">port</a></li>
+    <li><a href="#quote_path_info">quote_path_info</a></li>
+    <li><a href="#quote_query_string">quote_query_string</a></li>
+    <li><a href="#server_tag">server_tag</a></li>
+    <li><a href="#server_type">server_type</a></li>
+    <li><a href="#sign_invocation_id">sign_invocation_id</a></li>
+    <li><a href="#syslog_address">syslog_address</a></li>
+    <li><a href="#syslog_facility">syslog_facility</a></li>
+    <li><a href="#validation_precedence">validation_precedence</a></li>
+</ul>
+
+<h5 id="add_default_if_not_found">add_default_if_not_found</h5>
+
+Default:
+<span class="default">
+True
+</span>
+
+On startup, when reading the <a href="#urls">URLs to be secured</a>, sec-wall makes a note
+of whether it has seen the catch-all <b>/\*</b> URL pattern (that's a slash followed
+by an asterisk, meaning "any URL"). If all URLs have been read and no configuration
+for the /* pattern has been found, the boolean value of <i>add_default_if_not_found</i>
+dictates whether one should be added. The value to be added will be read from
+the <a href="#default_url_config">default_url_config</a> variable.
+
+Note that the default values of <i>add_default_if_not_found</i> and
+<a href="#default_url_config">default_url_config</a> make for a very secure installation
+which prohibits any client connections unless explicitly allowed so there's probably
+no reason for ever changing it, but the option's here in case you really need to.
+
+See also: [default_url_config](#default_url_config).
+
+<h5 id="add_invocation_id">add_invocation_id</h5>
+
+Default:
+<span class="default">
+True
+</span>
+
+A boolean value indicating whether the backend the requests are proxied over to
+and the client sending the requests in should receive an <b>X-sec-wall-invocation-id</b>
+header. Assuming <a href="#INSTANCE_UNIQUE">INSTANCE_UNIQUE</a> is configured
+according to the suggestions, the header's value uniquely identifies the given request and may be used,
+for instance, in reconcilliation processes, when backend and client applications
+are at odds over who sent what and when. Note that the value may be also cryptographically signed off
+if [sign_invocation_id](#sign_invocation_id) is True. Refer to
+[the logging documentation](/documentation/ref-docs/logging.html#http-headers-format)
+for more details regarding the header's format.
+
+See also: [INSTANCE_UNIQUE](#INSTANCE_UNIQUE) and [sign_invocation_id](#sign_invocation_id).
+
+<h5 id="ca_certs">ca_certs</h5>
+
+Default:
+<span class="default">
+An absolute value  of '.' + crypto_dir + 'ca-cert.pem' where '.' denotes a directory
+the config.py file is in and [crypto_dir](#crypto_dir) is a base directory
+for keeping the crypto material. For instance, if config.py is in
+/home/sec-wall/production/ and [crypto_dir](#crypto_dir) will be set
+to its default value of ./crypto then ca_certs will be equal to
+/home/sec-wall/production/crypto/ca-cert.pem
+</span>
+
+A string representing the path to a list of concatenated PEM-encoded certificates
+of Certificate Authorities you're willing to trust. Note that the file should
+contain certificates of CAs signing the certificates of both clients and backend
+servers, they all should be stored in the same file.
+
+See also: [certfile](#certfile), [crypto_dir](#crypto_dir), [keyfile](#keyfile), and [server_type](#server_type).
+
+<h5 id="certfile">certfile</h5>
+
+Default:
+<span class="default">
+An absolute value  of '.' + crypto_dir + 'server-cert.pem' where '.' denotes a directory
+the config.py file is in and [crypto_dir](#crypto_dir) is a base directory
+for keeping the crypto material. For instance, if config.py is in
+/home/sec-wall/production/ and [crypto_dir](#crypto_dir) will be set
+to its default value of ./crypto then ca_certs will be equal to
+/home/sec-wall/production/crypto/server-cert.pem
+</span>
+
+Path to a PEM-encoded server certificate which is used if the instance is to be
+run in the HTTPS mode.
+
+See also: [ca_certs](#ca_certs), [crypto_dir](#crypto_dir), [keyfile](#keyfile), and [server_type](#server_type).
+
+<h5 id="client_cert_401_www_auth">client_cert_401_www_auth</h5>
+
+Default:
+<span class="default">
+A string 'Transport mode="tls-client-certificate"'
+</span>
+
+Value to be used in the <b>WWW-Authenticate</b> header with the purpose of signaling
+to the client that its request wouldn't have been rejected straight away had the client sent a client certificate in.
+Inspired by the
+[IETF discussion of the idea](http://www6.ietf.org/mail-archive/web/tls/current/msg05589.html)
+![](/media/gfx/external-link.png).
+
+<h5 id="crypto_dir">crypto_dir</h5>
+
+Default:
+<span class="default">
+An absolute value  of './crypto' + where '.' denotes a directory
+the config.py file is in.
+</span>
+
+The value of crypto_dir is used by default in <a href="#ca_certs">ca_certs</a>,
+<a href="#certfile">certfile</a> and <a href="#keyfile">keyfile</a> so that the
+full path to the directory containing the crypto data doesn't have to be hardcoded
+in them directly.
+
+See also: [certfile](#certfile), [ca_certs](#ca_certs), [keyfile](#keyfile), and [server_type](#server_type).
+
+<h5 id="default_url_config">default_url_config</h5>
+
+Default:
+{% syntax python %}
+{
+    'ssl': True,
+    'ssl-cert': True,
+    'ssl-cert-commonName': uuid4().hex,        # Skipped importing the built-in 'uuid.uuid4' object
+    'host': 'http://{0}'.format(uuid4().hex),
+    'from-client-ignore': [],
+    'to-backend-add': {},
+    'from-backend-ignore': [],
+    'to-client-add': {}
+}
+{% endsyntax %}
+
+The value to be used as a configuration for the catch-all /* URL pattern if
+[add_default_if_not_found](#add_default_if_not_found) is True.
+
+See also: [add_default_if_not_found](#add_default_if_not_found).
+
+<h5 id="forbidden">forbidden</h5>
+
+Default:
+{% syntax python %}
+['403', 'Forbidden', 'text/plain', str('You are not allowed to access this resource')]
+{% endsyntax %}
+
+A four-element list whose elements indicate what to return in case the client
+was forbidden access to a resource. The elements are:
+
+* HTTP response code
+* reason phrase
+* media type returned
+* human-friendly explanation returned to the client application
+
+See also: [internal_server_error](#internal_server_error), [no_url_match](#no_url_match) and [not_authorized](#not_authorized).
+
+
+<h5 id="from_backend_ignore">from_backend_ignore</h5>
+
+Default:
+{% syntax python %}
+['Server']
+{% endsyntax %}
+
+A list of HTTP headers that should never be proxied from a backend to the client
+application. Use an empty list if you'd like to have the proxy return all the headers
+the backend application returns.
+
+See also: [server_tag](#server_tag).
+
+<h5 id="host">host</h5>
+
+Default:
+{% syntax python %}
+'0.0.0.0'
+{% endsyntax %}
+
+Host to listen on.
+
+See also: [port](#port).
+
+<h5 id="instance_name">instance_name</h5>
+
+Default:
+{% syntax python %}
+'default'
+{% endsyntax %}
+
+An operator-friendly name assigned to the given instance of sec-wall. Used for logging
+purposes. There's no real enforcement of the name being unique among the sec-wall
+instances running in your environment yet the name should be unique, otherwise
+resolving any problems or understanding the message flow may be difficult. Compare
+with [INSTANCE_UNIQUE](#INSTANCE_UNIQUE) which servers a related purpose.
+
+See also: [INSTANCE_UNIQUE](#INSTANCE_UNIQUE).
+
+<h5 id="internal_server_error">internal_server_error</h5>
+
+Default:
+{% syntax python %}
+['500', 'Internal Server Error', 'text/plain', str('Internal Server Error')]
+{% endsyntax %}
+
+A four-element list whose elements indicate what to return in case an internal
+server error has been encountered. The elements are:
+
+* HTTP response code
+* reason phrase
+* media type returned
+* human-friendly explanation returned to the client application
+
+See also: [forbidden](#forbidden), [no_url_match](#no_url_match) and [not_authorized](#not_authorized).
+
+<h5 id="keyfile">keyfile</h5>
+
+Default:
+<span class="default">
+An absolute value  of '.' + crypto_dir + 'server-priv.pem' where '.' denotes a directory
+the config.py file is in and [crypto_dir](#crypto_dir) is a base directory
+for keeping the crypto material. For instance, if config.py is in
+/home/sec-wall/production/ and [crypto_dir](#crypto_dir) will be set
+to its default value of ./crypto then keyfile will be equal to
+/home/sec-wall/production/crypto/server-priv.pem
+</span>
+
+Path to a PEM-encoded server's private key which is used if the instance is to be
+run in the HTTPS mode.
+
+See also: [certfile](#certfile), [ca_certs](#ca_certs), [crypto_dir](#crypto_dir), and [server_type](#server_type).
+
+<h5 id="log_file_config">log_file_config</h5>
+
+Default:
+<span class="default">
+None
+</span>
+
+Path to a logging configuration file, must be in
+<a href="http://docs.python.org/library/logging.html#configuring-logging">the format Python stdlib's logging.fileConfig function can understand</a> ![](/media/gfx/external-link.png).
+Configuration read from the file pointed to
+by this variable will override any other logging-related options set in the config.py
+file. <a href="/documentation/ref-docs/logging.html">Click here to read more about confiruging sec-wall's logging features</a>.
+
+See also: [log_level](#log_level), [syslog_address](#syslog_address) and [syslog_facility](#syslog_facility).
+
+<h5 id="log_level">log_level</h5>
+
+Default:
+<span class="default">
+'INFO'
+</span>
+
+A string representing the log level the instance is running on. Must be one of
+[the levels Python's logging module understands](http://docs.python.org/library/logging.html#logging-levels) ![](/media/gfx/external-link.png).
+[Click here to read more about confiruging sec-wall's logging features](/documentation/ref-docs/logging.html#log-entries).
+
+See also: [log_file_config](#log_file_config), [syslog_address](#syslog_address) and [syslog_facility](#syslog_facility).
+
+<h5 id="no_url_match">no_url_match</h5>
+
+Default:
+<span class="default">
+['404', 'Not Found', 'text/plain', str('Not Found')]
+</span>
+
+A four-element list whose elements indicate that although the client's auth
+data allowed it to establish a connection to the proxy, there was no configuration
+for the URL client has requested, in other words, the instance doesn't know
+anything about that URL. The elements are:
+
+* HTTP response code
+* reason phrase
+* media type returned
+* human-friendly explanation returned to the client application
+
+See also: [forbidden](#forbidden), [internal_server_error](#internal_server_error) and [not_authorized](#not_authorized).
+
+<h5 id="not_authorized">not_authorized</h5>
+
+Default:
+<span class="default">
+['401', 'Not Authorized', 'text/plain', str('You are not authorized to access this resource')]
+</span>
+
+A four-element list whose elements indicate that the client connectin to the instance
+is not authorized to access the URL. The elements are:
+
+* HTTP response code
+* reason phrase
+* media type returned
+* human-friendly explanation returned to the client application
+
+See also: [forbidden](#forbidden), [internal_server_error](#internal_server_error) and [no_url_match](#no_url_match).
+
+<h5 id="port">port</h5>
+
+Default:
+{% syntax python %}
+15100
+{% endsyntax %}
+
+Port to bind to. The value should be an integer, not a string.
+
+See also: [host](#host).
+
+<h5 id="quote_path_info">quote_path_info</h5>
+
+Default:
+{% syntax python %}
+False
+{% endsyntax %}
+
+Set to True if you expect path info elements in URLs accessed by client applications to contain
+characters from outside of the ASCII range. Various spurious errors may pop up
+if the path info isn't ASCII-only and *quote_path_info* isn't True. For instance,
+if there's any chance you need to secure a URL along the lines of /ęóąśłżźćń
+then *quote_path_info* should be True.
+
+See also: [quote_query_string](#quote_query_string).
+
+<h5 id="quote_query_string">quote_query_string</h5>
+
+Default:
+{% syntax python %}
+False
+{% endsyntax %}
+
+Similar to [quote_path_info](#quote_path_info), set to True if you expect query strings
+in URLs accessed by client applications to contain
+characters from outside of the ASCII range. Various spurious errors may pop up
+if the query string isn't ASCII-only and *quote_query_string* isn't True. If it's
+likely you'll be securing URLs similar to /foo?ęó=ąś then *quote_query_string*
+should be True.
+
+See also: [quote_path_info](#quote_path_info).
+
+<h5 id="server_tag">server_tag</h5>
+
+Default:
+{% syntax text %}
+'sec-wall/1.0.0' for version 1.0.0, or in general - 'sec-wall/' followed by a full sec-wall's version
+{% endsyntax %}
+
+Value to return to client applications in the 'Server' header' if the
+[from_backend_ignore](#from_backend_ignore) variable contains 'Server' - which
+it does by default. Set it, for instance, to 'Apache' or 'nginx' if for some
+reason you'd rather prefer client applications thought they were talking directly
+to the backend servers.
+
+See also: [from_backend_ignore](#from_backend_ignore).
+
+<h5 id="server_type">server_type</h5>
+
+Default:
+{% syntax python %}
+'http'
+{% endsyntax %}
+
+Must be either 'http' or 'https' and says whether the instance should be running
+in plain HTTP or in HTTPS mode. Don't forget about [ca_certs](#ca_certs), [certfile](#certfile),
+and [keyfile](#keyfile) if you set it to 'https'.
+
+See also: [ca_certs](#ca_certs), [certfile](#certfile), [crypto_dir](#crypto_dir) and [keyfile](#keyfile).
+
+<h5 id="sign_invocation_id">sign_invocation_id</h5>
+
+Default:
+{% syntax python %}
+True
+{% endsyntax %}
+
+If [add_invocation_id](#add_invocation_id) is True,
+whether to add an **X-sec-wall-invocation-id-signed** header. The header's value
+is computed as follows (pseudocode):
+
+delimeter = ':'
+<br/>
+X-sec-wall-invocation-id-signed = SHA256(<a href="#INSTANCE_SECRET">INSTANCE_SECRET</a> + delimeter + X-sec-wall-invocation-id)
+
+See also: [add_invocation_id](#add_invocation_id) and [INSTANCE_SECRET](#INSTANCE_SECRET).
+
+<h5 id="syslog_address">syslog_address</h5>
+
+Default:
+{% syntax python %}
+b'/dev/log'
+{% endsyntax %}
+
+Address of the syslog to use by default. Note that if it's a string, it must be prepended
+with 'b' (just like the default is). In can also point to a UDP address in the form
+of a two-element list, such as ['127.0.0.1', 514]. See
+[the logging documentation](/documentation/ref-docs/logging.html) for more regarding sec-wall's approach to logging.
+
+See also: [log_file_config](#log_file_config), [log_level](#log_level) and [syslog_facility](#syslog_facility).
+
+<h5 id="syslog_facility">syslog_facility</h5>
+
+Default:
+{% syntax python %}
+SysLogHandler.LOG_USER
+{% endsyntax %}
+
+The syslog's facility to use. It must be one of
+[the symbolic values understood by the Python's logging machinery](http://docs.python.org/library/logging.html#sysloghandler) ![](/media/gfx/external-link.png).
+
+See also: [log_file_config](#log_file_config), [log_level](#log_level) and [syslog_address](#syslog_address).
+
+<h5 id="validation_precedence">validation_precedence</h5>
+
+Default:
+{% syntax python %}
+['ssl-cert', 'basic-auth', 'digest-auth', 'wsse-pwd', 'custom-http', 'xpath']
+{% endsyntax %}
+
+Sets the precedence, the priority, of the config types. Used when there are conflicts
+in the [urls](#urls) variable. For instance, in the sample config below, both
+a custom HTTP header and an XPath expression have been configured. The HTTP header
+will be of a higher priority because 'custom-http' comes prior to 'xpath' on
+the *validation_precedence* list.
+
+{% syntax python %}
+def my_config():
+    return {
+        'ssl': False,
+        'custom-http': True,
+        'custom-http-X-ABC':'foo',
+        'xpath': True,
+        'xpath-my-expr':"//foobar/@myattr='myvalue'",
+        'host': 'http://localhost:17090/'
+    }
+
+urls = [
+    ('/abc', my_config()),
+]
+{% endsyntax %}
+
+<h2 id="examples">Examples</h2>
+
+There's [a whole chapter devoted to nothing but showing various examples of sec-wall's configuration files](/documentation/usage-examples/index.html),
+head over there for more information.
+
+{% endmarkdown %}
+
+{% endblock %}
