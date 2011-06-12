@@ -81,7 +81,7 @@ class _RequestApp(object):
 
             # Just in case the user didn't do it, upper-case all the headers
             # to make all the comparisons case-insensitive.
-            url_config['from-client-ignore'][:] = [elem.upper() for elem in url_config.get('from-client-ignore', {})]
+            url_config['from-client-ignore'][:] = map(str.upper, url_config.get('from-client-ignore', {}))
 
         if not seen_default and self.add_default_if_not_found:
             self.urls.append((default_pattern, self.config.default_url_config))
@@ -198,7 +198,7 @@ class _RequestApp(object):
                 req.add_header(name, value)
 
         # Custom headers to be sent to the backend server.
-        for name, value in to_backend_add.items():
+        for name, value in to_backend_add.iteritems():
             req.add_header(name, value)
 
         # Sign and return the invocation ID.
@@ -209,7 +209,7 @@ class _RequestApp(object):
             req.add_header('X-sec-wall-invocation-id-signed', ctx.invocation_id_signed)
 
         if url_config.get('add-auth-info', True):
-            req.add_header('X-sec-wall-auth-info', ctx.auth_result.auth_info)
+            req.add_header('X-sec-wall-auth-info', ctx.auth_result.auth_info.strip())
 
         if url_config.get('sign-auth-info', True):
             h = hashlib.sha256()
@@ -248,8 +248,7 @@ class _RequestApp(object):
             for name in ctx.url_config['from-backend-ignore']:
                 headers.pop(name, None)
 
-            for name, value in ctx.url_config['to-client-add'].items():
-                headers[name] = value
+            headers.update(ctx.url_config['to-client-add'])
         else:
             # Special-case the 'Server' header.
             if 'Server' in self.from_backend_ignore:
@@ -287,7 +286,7 @@ class _RequestApp(object):
         header_value = www_auth[config_type]
 
         if config_type in('basic-auth', 'wsse-pwd'):
-            header_value = header_value.format(realm=url_config[config_type + '-' + 'realm'])
+            header_value = header_value.format(realm=url_config[config_type + '-realm'])
         elif config_type == 'digest-auth':
             realm = url_config['digest-auth-realm']
             nonce = uuid.uuid4().hex
@@ -527,7 +526,7 @@ class _RequestApp(object):
                 return AuthResult(False, AUTH_XPATH_EXPR_MISMATCH)
         else:
             auth_result = AuthResult(True, '0')
-            auth_result.auth_info = [str(e) for e in expressions]
+            auth_result.auth_info = map(str, expressions)
 
             return auth_result
 

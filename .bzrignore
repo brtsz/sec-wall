@@ -1,0 +1,15 @@
+code/src/sec_wall.egg-info
+build
+dist
+.coverage
+docs/site/hyde-src/deploy
+docs/site/hyde-src/site.log
+code/bin
+code/develop-eggs
+code/eggs
+code/include
+code/lib
+code/parts
+code/.installed.cfg
+docs/site/hyde-src/deploy_tmp
+patches
